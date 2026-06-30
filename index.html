@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Divide and Learn (D&L): Multiobjective Combinatorial Optimization at Scale via per position bandits with multiple experts. ICML 2026.">
+  <meta name="keywords"
+        content="Multiobjective Optimization, Combinatorial Bandits, Online Learning, MOCO, LLM Routing, NAS, ICML 2026">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Divide and Learn: MOCO at Scale (ICML 2026)</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans:400,500,600,700|Inter:400,500,600,700|JetBrains+Mono:400,500"
+        rel="stylesheet">
+
+  <!-- Bulma -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <link rel="stylesheet" href="./static/css/index.css">
+
+  <!-- MathJax -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+
+<!-- ====================== STICKY RIGHT-SIDE TOC ====================== -->
+<nav class="page-toc" aria-label="On this page">
+  <div class="toc-label">On this page</div>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li>
+      <a href="#key-idea">Key idea</a>
+      <ul class="toc-sub">
+        <li><a href="#decomposition">Decomposition</a></li>
+      </ul>
+    </li>
+    <li><a href="#uses">What you can do</a></li>
+    <li><a href="#method">Method</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#BibTeX">BibTeX</a></li>
+  </ul>
+</nav>
+
+
+<!-- ====================== HERO ====================== -->
+<section class="hero hero-main">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+
+          <h1 class="publication-title">
+            Divide <span class="amp">&amp;</span> Learn: Multiobjective Combinatorial Optimization at Scale
+          </h1>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://esha-singh.github.io/" target="_blank" rel="noopener">Esha&nbsp;Singh</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="https://dongxiaw.github.io/" target="_blank" rel="noopener">Dongxia&nbsp;Wu</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a href="https://doctryucsd.github.io/personal_website/" target="_blank" rel="noopener">Chien-Yi&nbsp;Yang</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="https://cseweb.ucsd.edu/~trosing/" target="_blank" rel="noopener">Tajana&nbsp;Rosing</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="https://roseyu.com/" target="_blank" rel="noopener">Rose&nbsp;Yu</a><sup>1,3</sup>,</span>
+            <span class="author-block">
+              <a href="https://sites.google.com/view/yianma/home" target="_blank" rel="noopener">Yi-An&nbsp;Ma</a><sup>1,3</sup>
+            </span>
+          </div>
+
+          <div class="is-size-6 publication-affiliations">
+            <span><sup>1</sup>Department of Computer Science and Engineering, University of California, San Diego</span>
+            <span class="dot">·</span>
+            <span><sup>2</sup>Stanford University</span>
+            <span class="dot">·</span>
+            <span><sup>3</sup>Halıcıoğlu Data Science Institute, University of California, San Diego</span>
+          </div>
+
+          <div class="publication-venue">
+            Accepted at&nbsp;<strong>ICML&nbsp;2026</strong>
+          </div>
+
+          <div class="publication-links">
+            <a href="#"
+               class="external-link button is-rounded">
+              <span class="icon"><i class="ai ai-arxiv"></i></span>
+              <span>arXiv</span>
+            </a>
+            <a href="https://openreview.net/forum?id=TK82ECnJzD"
+               class="external-link button is-rounded">
+              <span class="icon"><i class="ai ai-open-access"></i></span>
+              <span>ICML</span>
+            </a>
+            <a href="https://github.com/Rose-STL-Lab/divide-n-learn"
+               class="external-link button is-rounded">
+              <span class="icon"><i class="fab fa-github"></i></span>
+              <span>Code</span>
+            </a>
+            <a href="#"
+               class="external-link button is-rounded">
+              <span class="icon"><i class="fas fa-image"></i></span>
+              <span>Poster</span>
+            </a>
+            <a href="#BibTeX"
+               class="external-link button is-rounded">
+              <span class="icon"><i class="fas fa-quote-left"></i></span>
+              <span>BibTeX</span>
+            </a>
+          </div>
+
+          <!-- two-line summary, below buttons, above the divider -->
+          <div class="hero-tagline-inner">
+            <span class="accent-rule"></span>
+            Multiobjective combinatorial optimization, online. No surrogate models, no offline training.
+            <span class="dnl">D&amp;L</span> decomposes the problem into per position bandits and finds Pareto optimal solutions with <strong>sublinear regret</strong>.
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ====================== TEASER GIF ====================== -->
+<section class="hero teaser-gif">
+  <div class="container is-max-desktop">
+    <div class="gif-wrap">
+      <img src="https://raw.githubusercontent.com/esha-singh/assets/main/dnl-example.gif"
+           alt="D&L learning to construct Pareto optimal solutions in real time"
+           class="teaser-img">
+    </div>
+    <p class="teaser-caption">
+      <span class="dnl">D&amp;L</span> learns Pareto optimal solutions over exponential
+      combinatorial spaces, one position at a time. No offline training, no surrogate models.
+    </p>
+  </div>
+</section>
+
+
+<!-- ====================== OVERVIEW ====================== -->
+<section class="section section-overview" id="overview">
+  <div class="container is-max-desktop">
+    <h2 class="section-title">Overview</h2>
+    <div class="content overview-content">
+      <p>
+        Multiobjective combinatorial optimization (MOCO) seeks Pareto optimal solutions
+        over exponentially large discrete spaces. These problems appear in
+        <strong>hardware design</strong>, <strong>drug discovery</strong>,
+        <strong>LLM routing</strong>, and <strong>protein engineering</strong>. Existing
+        methods sacrifice one of: generality, scalability, or theoretical guarantees.
+      </p>
+      <p>
+        <span class="dnl">D&amp;L</span> reframes MOCO as an
+        <em>online learning problem over a decomposed decision space</em>: instead of searching
+        the exponential global space, we decompose it into overlapping per position
+        subproblems and solve each with a <strong>multi expert bandit</strong>. The result is
+        sublinear regret depending only on the subproblem size $d \ll n$, an
+        <strong>exponential to polynomial reduction</strong> over standard combinatorial
+        bandits.
+      </p>
+      <div class="overview-stats">
+        <div class="stat">
+          <div class="stat-num">80–98<span class="stat-unit">%</span></div>
+          <div class="stat-label">of specialized solver performance</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">90<span class="stat-unit">%</span></div>
+          <div class="stat-label">less compute than Bayesian optimization</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">$10^{60}$</div>
+          <div class="stat-label">search space size we validate on</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ====================== KEY IDEA / ARCHITECTURE ====================== -->
+<section class="section section-key-idea" id="key-idea">
+  <div class="container is-max-desktop">
+    <h2 class="section-title">Key idea: decompose, learn, coordinate</h2>
+    <p class="section-lede">
+      <span class="dnl">D&amp;L</span> turns one intractable bandit problem into many
+      tractable ones, with explicit coordination across overlapping positions.
+    </p>
+
+    <figure class="architecture-figure">
+      <img src="./static/images/architecture.png"
+           alt="D&L framework: Problem scalarization, Overlapping subproblem decomposition, Online combinatorial multi expert learning, Final Pareto front">
+    </figure>
+
+    <h3 class="subsection-title" id="decomposition">How decomposition scales</h3>
+    <p class="prose-para">
+      Combinatorial bandits face one fundamental obstacle: the action space grows as
+      $\{2^n, n!\}$ in the problem dimension $n$, so any no regret algorithm tracking
+      per arm statistics is dead on arrival once $n$ leaves single digits.
+      <span class="dnl">D&amp;L</span> sidesteps this by <strong>partitioning the
+      $n$ variables into $K$ overlapping subproblems</strong> $S_1, \dots, S_K$,
+      each containing roughly $d = n/K$ variables. Each subproblem becomes its own
+      small bandit over $2^d$ arms, a number that stays polynomial in $n$ as long as
+      $K$ scales sublinearly. The overlap regions $\mathcal{O}_{pq} = S_p \cap S_q$ are
+      the real trick: <strong>shared variables accumulate statistics across multiple
+      subproblems</strong>, so an observation made while optimizing one subproblem
+      informs every other subproblem the variable appears in. Overlapping subproblems
+      will occasionally disagree on their shared variables, and we resolve those
+      conflicts via Lagrangian relaxation, a soft penalty $\xi_i^{(t)}$ added to the
+      reward that <em>grows</em> when value estimates have high variance and
+      <em>shrinks</em> as estimates converge. The dual variables $\lambda_i$ are
+      updated by accelerated mirror descent, and the cumulative coupling cost provably
+      scales as $\mathcal{O}(\sqrt{T})$. The net effect: <strong>what was one
+      intractable bandit over an exponential action space becomes $K$ tractable
+      bandits sharing information through overlap</strong>, with a coordination
+      overhead that is sublinear in $T$ and therefore vanishes against the leading
+      regret term.
+    </p>
+
+    <div class="step-cards">
+      <div class="step-card">
+        <div class="step-tag">A &nbsp;·&nbsp; Problem</div>
+        <p>
+          Combine $m$ objectives via a scalarization $g_w(x) = \sum_i w_i f_i(x)$ on a
+          discrete decision space (permutations, binary vectors, or categorical
+          configurations).
+        </p>
+      </div>
+      <div class="step-card">
+        <div class="step-tag">B &nbsp;·&nbsp; Decompose</div>
+        <p>
+          Partition the $n$ decision variables into $K$ overlapping subproblems
+          $\{S_1, \dots, S_K\}$ of size $d = O(n/K)$. Shared variables let information
+          flow between subproblems.
+        </p>
+      </div>
+      <div class="step-card">
+        <div class="step-tag">C &nbsp;·&nbsp; Learn online</div>
+        <p>
+          Each iteration: pick a weight $w_t$, optimize each subproblem with a
+          <strong>multi expert bandit</strong>, update Lagrange multipliers $\lambda_i$ to
+          resolve overlap conflicts.
+        </p>
+      </div>
+      <div class="step-card">
+        <div class="step-tag">D &nbsp;·&nbsp; Collect</div>
+        <p>
+          Solutions found across weights $w_1, \dots, w_T$ are stitched into the final
+          Pareto front. Sublinear regret per subproblem yields an
+          $\mathcal{O}(d\sqrt{T \log T})$ global bound.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ====================== WHAT YOU CAN DO ====================== -->
+<section class="section section-uses" id="uses">
+  <div class="container is-max-desktop">
+    <h2 class="section-title">What you can do with <span class="dnl">D&amp;L</span></h2>
+    <p class="section-lede">
+      Any problem where you make many discrete decisions and care about multiple competing
+      criteria fits the same template: pick decision variables, define your objectives, let
+      <span class="dnl">D&amp;L</span> handle exploration.
+    </p>
+
+    <div class="use-list">
+
+      <article class="use-row">
+        <div class="use-left">
+          <span class="use-tag">ML&nbsp;Infrastructure</span>
+          <h3>LLM&nbsp;Routing</h3>
+        </div>
+        <div class="use-mid">
+          <p class="use-scenario">
+            Route incoming queries across a heterogeneous pool of LLM endpoints
+            (GPT class, Claude class, open weights, fine tuned in house) to balance
+            <em>response quality</em>, <em>cost per token</em>, and <em>latency</em>.
+          </p>
+        </div>
+        <div class="use-right">
+          <div class="use-mapping">
+            <div><span class="m-key">Positions</span><span class="m-val">Query slots in a batch</span></div>
+            <div><span class="m-key">Actions</span><span class="m-val">Choice of model / route</span></div>
+            <div><span class="m-key">Objectives</span><span class="m-val">Quality, cost, p95 latency</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="use-row">
+        <div class="use-left">
+          <span class="use-tag">Agentic&nbsp;AI</span>
+          <h3>Agentic Tool Selection</h3>
+        </div>
+        <div class="use-mid">
+          <p class="use-scenario">
+            At each step of an autonomous agent's trajectory (web search, code execution,
+            retrieval, subagent dispatch), pick which tool to invoke. Feedback arrives
+            only at task completion, every rollout is expensive, and the action space is
+            combinatorial.
+          </p>
+        </div>
+        <div class="use-right">
+          <div class="use-mapping">
+            <div><span class="m-key">Positions</span><span class="m-val">Steps in agent trajectory</span></div>
+            <div><span class="m-key">Actions</span><span class="m-val">Tool / skill / subagent</span></div>
+            <div><span class="m-key">Objectives</span><span class="m-val">Task success, token cost, wall clock</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="use-row">
+        <div class="use-left">
+          <span class="use-tag">Reasoning&nbsp;Agents</span>
+          <h3>Test time Compute Scheduling</h3>
+        </div>
+        <div class="use-mid">
+          <p class="use-scenario">
+            For reasoning agents (chain of thought, self consistency, tree search), decide
+            <em>how much</em> compute to spend at each step (number of samples,
+            branching factor, verifier on/off, retry budget) to hit a target accuracy
+            without burning the inference budget.
+          </p>
+        </div>
+        <div class="use-right">
+          <div class="use-mapping">
+            <div><span class="m-key">Positions</span><span class="m-val">Reasoning steps</span></div>
+            <div><span class="m-key">Actions</span><span class="m-val">Samples, branches, verifier toggle</span></div>
+            <div><span class="m-key">Objectives</span><span class="m-val">Accuracy, total tokens, wall clock</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="use-row">
+        <div class="use-left">
+          <span class="use-tag">LLM&nbsp;Applications</span>
+          <h3>RAG Pipeline Configuration</h3>
+        </div>
+        <div class="use-mid">
+          <p class="use-scenario">
+            Configure the discrete knobs of a retrieval augmented generation system: chunk size, top-$k$, reranker on/off, hybrid weights, embedding model,
+            generator. Each end to end eval is an expensive offline benchmark run.
+          </p>
+        </div>
+        <div class="use-right">
+          <div class="use-mapping">
+            <div><span class="m-key">Positions</span><span class="m-val">Pipeline stages</span></div>
+            <div><span class="m-key">Actions</span><span class="m-val">Component / hyperparameter bucket</span></div>
+            <div><span class="m-key">Objectives</span><span class="m-val">Answer quality, recall, latency, cost</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="use-row">
+        <div class="use-left">
+          <span class="use-tag">Systems</span>
+          <h3>Hardware and Software Codesign</h3>
+        </div>
+        <div class="use-mid">
+          <p class="use-scenario">
+            Codesign AI accelerators with their software stacks (memory hierarchy,
+            quantization, kernel layout) under expensive cycle accurate simulations.
+            <strong>Featured in the paper.</strong>
+          </p>
+        </div>
+        <div class="use-right">
+          <div class="use-mapping">
+            <div><span class="m-key">Positions</span><span class="m-val">HW + SW knobs (e.g. ReRAM size, kernel size)</span></div>
+            <div><span class="m-key">Actions</span><span class="m-val">Discrete config values</span></div>
+            <div><span class="m-key">Objectives</span><span class="m-val">Accuracy, latency, energy, area</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="use-row">
+        <div class="use-left">
+          <span class="use-tag">AutoML</span>
+          <h3>Neural Architecture Search</h3>
+        </div>
+        <div class="use-mid">
+          <p class="use-scenario">
+            Search over discrete architecture choices (block type, depth, width, attention
+            heads) for models that must hit a target accuracy <em>and</em> deployment budget.
+          </p>
+        </div>
+        <div class="use-right">
+          <div class="use-mapping">
+            <div><span class="m-key">Positions</span><span class="m-val">Layers / blocks</span></div>
+            <div><span class="m-key">Actions</span><span class="m-val">Operator type, size, activation</span></div>
+            <div><span class="m-key">Objectives</span><span class="m-val">Accuracy, FLOPs, memory, latency</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="use-row">
+        <div class="use-left">
+          <span class="use-tag">Scientific&nbsp;Discovery</span>
+          <h3>Molecule &amp; Protein Design</h3>
+        </div>
+        <div class="use-mid">
+          <p class="use-scenario">
+            Edit candidate molecules or protein sequences at the residue level, balancing
+            binding affinity, synthesizability, and toxicity. Each evaluation is an
+            expensive docking or assay simulation.
+          </p>
+        </div>
+        <div class="use-right">
+          <div class="use-mapping">
+            <div><span class="m-key">Positions</span><span class="m-val">Residues / atomic edit sites</span></div>
+            <div><span class="m-key">Actions</span><span class="m-val">Amino acid / substituent</span></div>
+            <div><span class="m-key">Objectives</span><span class="m-val">Affinity, SA score, ADMET</span></div>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <p class="use-footer">
+      The pattern: pick decision variables and their domains, define your objectives, and
+      <span class="dnl">D&amp;L</span> gives you regret bounded online optimization
+      <strong>without training a surrogate or running offline pretraining</strong>.
+    </p>
+  </div>
+</section>
+
+
+<!-- ====================== METHOD (BRIEF) ====================== -->
+<section class="section section-method" id="method">
+  <div class="container is-max-desktop">
+    <h2 class="section-title">Three coordinated mechanisms</h2>
+
+    <div class="mechanism">
+      <h3 class="mech-title"><span class="mech-num">1</span> Decomposition</h3>
+      <p>
+        Partition the $n$ variables into $K$ overlapping subproblems of size $d = O(n/K)$.
+        Action space drops from $O(2^n)$ to $O(K \cdot 2^{n/K})$. Overlap regions
+        $\mathcal{O}_{pq} = \mathcal{S}_p \cap \mathcal{S}_q$ let learning transfer across
+        partitions.
+      </p>
+    </div>
+
+    <div class="mechanism">
+      <h3 class="mech-title"><span class="mech-num">2</span> Lagrangian coordination</h3>
+      <p>
+        Hard consistency $x_i^{(p)} = x_i^{(q)}$ is relaxed into a soft penalty that
+        vanishes as estimates converge:
+      </p>
+      <p>
+        $$\mathcal{L}(x, \lambda) = r_t(x) - \sum_{i \in \mathcal{O}} \lambda_i \, \xi_i^{(t)},
+        \qquad
+        \xi_i^{(t)} = (k_i - 1)\,\text{Var}(\hat V_{i,\cdot}^{(t)})\,\big(1 - \tfrac{N_{i,x_i^{(t)}}}{\sum_a N_{i,a}}\big).$$
+      </p>
+      <p>
+        Dual variables $\lambda_i$ are updated by accelerated mirror descent, yielding
+        $O(\sqrt{T})$ cumulative coupling error.
+      </p>
+    </div>
+
+    <div class="mechanism">
+      <h3 class="mech-title"><span class="mech-num">3</span> Multi expert learning</h3>
+      <p>
+        Each subproblem is solved by an ensemble of no regret experts (UCB, EXP3, FTRL)
+        sharing global statistics. One expert is sampled to <em>select</em> at each
+        position; <strong>all experts update</strong> on the observed reward. Selection
+        is decoupled from learning, giving robustness across reward structures.
+      </p>
+    </div>
+
+    <div class="bound-box">
+      <div class="bound-label">Regret Bound</div>
+
+      <p class="bound-step-label">Total regret decomposes across subproblems and a coordination cost:</p>
+      <div class="bound-eq">
+        $$R(T) \;=\; \sum_{k=1}^{K} R^{(k)}(T) \;+\; C(T)$$
+      </div>
+
+      <p class="bound-step-label">Final guarantee:</p>
+      <div class="bound-eq bound-final">
+        $$R(T) \;=\; \mathcal{O}\!\left(d\sqrt{T\log T}\right) \;+\; \mathcal{O}\!\left(K^2 Q R_{\max}\sqrt{T}\right)$$
+      </div>
+
+      <div class="bound-note">
+        Leading term scales with subproblem dimension $d$, <em>not</em> the global
+        dimension $n$. Optimal $K^\star = \mathcal{O}\!\left(\sqrt{n/(QR_{\max})}\right)$.
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ====================== RESULTS ====================== -->
+<section class="section section-results" id="results">
+  <div class="container is-max-desktop">
+    <h2 class="section-title">Results</h2>
+    <p class="section-lede">
+      We evaluate <span class="dnl">D&amp;L</span> in two regimes: a real world
+      <strong>expensive evaluation</strong> setting (hardware and software codesign for AI
+      accelerators) and standard MOCO benchmarks where we stress test scalability.
+    </p>
+
+    <!-- =============================================================== -->
+    <!-- 1. HARDWARE-SOFTWARE CO-DESIGN — the real world headline -->
+    <!-- =============================================================== -->
+    <h3 class="subsection-title">Real world: Hardware and Software Codesign</h3>
+    <p class="subsection-lede">
+      A four objective problem over a 20 dimensional mixed integer design space
+      ($\sim 2.2 \times 10^5$ configurations) where each evaluation requires
+      <em>cycle accurate neural accelerator simulation</em> (hours of compute).
+      Budget fixed at <strong>150 evaluations</strong>.
+    </p>
+
+    <div class="headline-card">
+      <div class="headline-narrative">
+        <h4>The headline</h4>
+        <p>
+          <span class="dnl">D&amp;L</span>-TS reaches a hypervolume of
+          <strong>0.372 ± 0.006</strong>, about <strong>+28% over NSGA-II</strong> and
+          <strong>+30% over MOBO-qNEHVI</strong>. The improvement holds despite the
+          four objective structure, where hypervolume based Bayesian acquisition cost
+          scales exponentially with objective count and qNEHVI breaks down.
+        </p>
+        <p>
+          This is the regime <span class="dnl">D&amp;L</span> was designed for: many
+          competing objectives, expensive black box evaluations, no offline training.
+        </p>
+      </div>
+      <div class="result-table-wrap">
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Hypervolume&nbsp;($\uparrow$)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th>NSGA-II</th><td>0.291 &nbsp;<span class="muted">± 0.040</span></td></tr>
+            <tr><th>MOBO-qNEHVI</th><td>0.287 &nbsp;<span class="muted">± 0.015</span></td></tr>
+            <tr><th>MOBO-qParEGO</th><td>0.34 &nbsp;<span class="muted">± 0.012</span></td></tr>
+            <tr class="dnl-row"><th>D&amp;L</th><td><strong>0.36</strong> &nbsp;<span class="muted">± 0.01</span></td></tr>
+            <tr class="dnl-row"><th>D&amp;L-TS</th><td><strong>0.372</strong> &nbsp;<span class="muted">± 0.006</span></td></tr>
+          </tbody>
+          <caption>
+            Hardware and Software Codesign. Averaged over 10 seeds, fixed 150 evaluation
+            budget. From Table 2 of the paper.
+          </caption>
+        </table>
+      </div>
+    </div>
+
+    <!-- =============================================================== -->
+    <!-- 2. MOCO benchmarks: scaling story with two plots -->
+    <!-- =============================================================== -->
+    <h3 class="subsection-title">Scaling on standard MOCO benchmarks</h3>
+    <p class="subsection-lede">
+      Across Biobjective TSP, Biobjective Knapsack, Triobjective TSP, and
+      Biobjective CVRP at sizes $n \in \{20, 50, 100, 200\}$.
+      <span class="dnl">D&amp;L</span>-TS holds hypervolume close to the best
+      problem specific solvers <em>and</em> matches their compute cost.
+    </p>
+
+    <figure class="result-figure">
+      <img src="./static/images/hv_scaling.png"
+           alt="Hypervolume ratio across problem scales on Bi-TSP, Bi-KP, Tri-TSP, Bi-CVRP">
+      <figcaption>
+        <strong>Hypervolume ratio</strong> (↑ better) across four benchmarks and three
+        problem sizes. D&amp;L-TS (solid green) tracks the specialized WS/PPLS solver
+        (grey dashed) far above all general purpose baselines.
+      </figcaption>
+    </figure>
+
+    <figure class="result-figure">
+      <img src="./static/images/flops_scaling.png"
+           alt="Compute cost in TFLOPs across problem scales">
+      <figcaption>
+        <strong>Compute cost</strong> in TFLOPs (↓ better, log scale). D&amp;L-TS sits
+        with the cheapest specialized solver while PMOCO* and Best BO are
+        <strong>2–4 orders of magnitude more expensive</strong>.
+      </figcaption>
+    </figure>
+
+    <div class="result-table-wrap" style="margin-top: 2rem;">
+      <table class="result-table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="text-align:left;">Benchmark</th>
+            <th rowspan="2">$n$</th>
+            <th colspan="2" class="group-sep">Problem specific</th>
+            <th colspan="3" class="group-sep">General purpose</th>
+            <th colspan="2" class="group-sep">Ours</th>
+          </tr>
+          <tr>
+            <th class="group-sep">WS</th>
+            <th>PPLS/D-C</th>
+            <th class="group-sep">PMOCO*</th>
+            <th>NSGA-II</th>
+            <th>Best&nbsp;BO</th>
+            <th class="group-sep">D&amp;L</th>
+            <th>D&amp;L-TS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th rowspan="3" style="text-align:left;">Bi-TSP</th>
+            <td>20</td>
+            <td class="group-sep best">.625</td><td>.626</td>
+            <td class="group-sep">.360</td><td>.573</td><td>.536</td>
+            <td class="dnl-row group-sep">.585</td><td class="dnl-row gen-best">.600</td>
+          </tr>
+          <tr>
+            <td>50</td>
+            <td class="group-sep best">.629</td><td>.628</td>
+            <td class="group-sep">.330</td><td>.347</td><td>.472</td>
+            <td class="dnl-row group-sep">.530</td><td class="dnl-row gen-best">.540</td>
+          </tr>
+          <tr>
+            <td>100</td>
+            <td class="group-sep best">.690</td><td>.630</td>
+            <td class="group-sep">.309</td><td>.294</td><td>.104</td>
+            <td class="dnl-row group-sep">.400</td><td class="dnl-row gen-best">.470</td>
+          </tr>
+          <tr><th rowspan="3" style="text-align:left;">Bi-KP</th>
+            <td>50</td>
+            <td class="group-sep">.356</td><td class="best">.357</td>
+            <td class="group-sep">.340</td><td>.219</td><td>.301</td>
+            <td class="dnl-row group-sep gen-best">.350</td><td class="dnl-row">.347</td>
+          </tr>
+          <tr>
+            <td>100</td>
+            <td class="group-sep">.440</td><td class="best">.447</td>
+            <td class="group-sep">.370</td><td>.221</td><td>.314</td>
+            <td class="dnl-row group-sep">.338</td><td class="dnl-row gen-best">.385</td>
+          </tr>
+          <tr>
+            <td>200</td>
+            <td class="group-sep">.360</td><td class="best">.362</td>
+            <td class="group-sep">.186</td><td>.280</td><td>.266</td>
+            <td class="dnl-row group-sep">.260</td><td class="dnl-row gen-best">.300</td>
+          </tr>
+          <tr><th rowspan="3" style="text-align:left;">Tri-TSP</th>
+            <td>20</td>
+            <td class="group-sep best">.467</td><td>.388</td>
+            <td class="group-sep gen-best">.430</td><td>.411</td><td>.320</td>
+            <td class="dnl-row group-sep gen-best">.430</td><td class="dnl-row">.420</td>
+          </tr>
+          <tr>
+            <td>50</td>
+            <td class="group-sep best">.429</td><td>.262</td>
+            <td class="group-sep gen-best">.390</td><td>.173</td><td>.062</td>
+            <td class="dnl-row group-sep">.262</td><td class="dnl-row">.282</td>
+          </tr>
+          <tr>
+            <td>100</td>
+            <td class="group-sep best">.488</td><td>.241</td>
+            <td class="group-sep gen-best">.300</td><td>.135</td><td>.030</td>
+            <td class="dnl-row group-sep">.210</td><td class="dnl-row">.234</td>
+          </tr>
+          <tr><th rowspan="3" style="text-align:left;">Bi-CVRP</th>
+            <td>20</td>
+            <td class="group-sep">NA</td><td class="best">.480</td>
+            <td class="group-sep">.360</td><td>.430</td><td>.352</td>
+            <td class="dnl-row group-sep">.450</td><td class="dnl-row gen-best">.460</td>
+          </tr>
+          <tr>
+            <td>50</td>
+            <td class="group-sep">NA</td><td class="best">.450</td>
+            <td class="group-sep">.330</td><td>.310</td><td>.140</td>
+            <td class="dnl-row group-sep">.350</td><td class="dnl-row gen-best">.370</td>
+          </tr>
+          <tr>
+            <td>100</td>
+            <td class="group-sep">NA</td><td class="best">.430</td>
+            <td class="group-sep gen-best">.300</td><td>.310</td><td>.110</td>
+            <td class="dnl-row group-sep">.253</td><td class="dnl-row">.300</td>
+          </tr>
+        </tbody>
+        <caption>
+          Hypervolume ratio (↑ better, normalized to [0, 1]) across 4 benchmarks &times;
+          3 problem sizes, 200 instances each.
+          <strong style="color: var(--emph);">Green bold</strong> = best overall;
+          <span class="gen-best">underline</span> = best among general purpose methods.
+          Full results with NDS and compute cost are in Table 1 of the paper.
+        </caption>
+      </table>
+    </div>
+
+    <h3 class="subsection-title">Key takeaways</h3>
+    <ul class="result-takeaways">
+      <li><i class="fas fa-circle-check"></i>
+        <span><strong><span class="dnl">D&amp;L</span>-TS is the best general purpose method</strong> on 9 of 12 (benchmark, size) cells, and beats specialized solvers on Bi-KP-100.</span>
+      </li>
+      <li><i class="fas fa-circle-check"></i>
+        <span>Compute cost matches the cheapest specialized solver, <strong>2–4 orders of magnitude under PMOCO* and Best BO</strong>.</span>
+      </li>
+      <li><i class="fas fa-circle-check"></i>
+        <span>Advantage <strong>widens</strong> as problem size $n$ and objective count grow (clearest on Tri-TSP and Bi-CVRP).</span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- ====================== BIBTEX ====================== -->
+<section class="section section-bibtex" id="BibTeX">
+  <div class="container is-max-desktop">
+    <h2 class="section-title">BibTeX</h2>
+<pre class="bibtex-block"><code>@inproceedings{singh2026dnl,
+  title     = {Divide and Learn: Multiobjective Combinatorial Optimization at Scale},
+  author    = {Singh, Esha and Wu, Dongxia and Yang, Chien-Yi and
+               Rosing, Tajana and Yu, Rose and Ma, Yi-An},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2026},
+  url       = {https://openreview.net/forum?id=TK82ECnJzD}
+}</code></pre>
+  </div>
+</section>
+
+
+<!-- ====================== FOOTER ====================== -->
+<footer class="footer">
+  <div class="container">
+    <p class="footer-text">
+      Website template adapted from
+      <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a>.
+      Source freely available. Please link back if you fork.
+      Content licensed under
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">CC&nbsp;BY-SA&nbsp;4.0</a>.
+    </p>
+  </div>
+</footer>
+
+<script>
+  // Highlight current section in the right-side TOC as the user scrolls
+  (function() {
+    const sections = Array.from(document.querySelectorAll('section[id], section[id="BibTeX"]'));
+    const tocLinks = Array.from(document.querySelectorAll('.page-toc a'));
+    if (!sections.length || !tocLinks.length) return;
+    function update() {
+      let currentId = sections[0].id;
+      const offset = 120;
+      for (const sec of sections) {
+        const rect = sec.getBoundingClientRect();
+        if (rect.top - offset <= 0) currentId = sec.id;
+      }
+      tocLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + currentId);
+      });
+    }
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  })();
+</script>
+
+</body>
+</html>
